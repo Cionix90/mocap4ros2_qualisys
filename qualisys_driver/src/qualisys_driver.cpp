@@ -73,6 +73,7 @@ Quaternion matrixToQuaternion(float* matrix) {
 
 void QualisysDriver::set_settings_qualisys()
 {
+  
 }
 
 void QualisysDriver::loop()
@@ -166,7 +167,7 @@ void QualisysDriver::process_packet(CRTPacket * const packet)
       packet->Get6DOFBody(i, x, y, z, rot_matrix);
       Quaternion quaternion = matrixToQuaternion(rot_matrix);
 
-      rb.rigid_body_name = std::to_string(i);
+      rb.rigid_body_name = RB_name_[i];
       rb.pose.position.x = x / 1000;
       rb.pose.position.y = y / 1000;
       rb.pose.position.z = z / 1000;
@@ -255,6 +256,20 @@ CallbackReturnT QualisysDriver::on_activate(const rclcpp_lifecycle::State &)
   bool success = connect_qualisys();
 
   if (success) {
+
+
+    int RB_num = port_protocol_.Get6DOFBodyCount();
+    RB_name_.resize(RB_num);
+    for(int i =0; i < RB_num; i++)
+    {
+      RB_name_[i] = std::string(port_protocol_.Get6DOFBodyName(i));
+      RCLCPP_INFO(get_logger(),"The RB at index %d has name %s",i,RB_name_[i].c_str());
+    }
+  
+    
+    
+    
+
     timer_ = this->create_wall_timer(100ms, std::bind(&QualisysDriver::loop, this));
 
     RCLCPP_INFO(get_logger(), "Activated!\n");
@@ -317,7 +332,7 @@ bool QualisysDriver::connect_qualisys()
   RCLCPP_WARN(
     get_logger(),
     "Trying to connect to Qualisys host at %s:%d", host_name_.c_str(), port_);
-
+      
   if (!port_protocol_.Connect(
       reinterpret_cast<const char *>(host_name_.data()), port_, 0, 1, 7))
   {
